@@ -1,0 +1,3 @@
+[submodule "src/aglais"]
+	path = src/aglais
+	url = https://github.com/CapeLeidokos/Aglais.git
