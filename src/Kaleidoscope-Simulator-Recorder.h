@@ -40,7 +40,7 @@ class SimulatorRecorder : public Plugin {
       static void sendReportHook(uint8_t id, const void* data, int len, int result);
       
       bool first_use_ = true;
-      uint16_t cycle_id_ = 0;
+      uint32_t cycle_id_ = 0;
       const char *id_string_ = nullptr;
 };
    
