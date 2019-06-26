@@ -15,6 +15,11 @@ Kaleidoscope-Simulator-Recorder collects timing information and sends them via t
 
 ## Application
 
+### Installing Aglais
+
+Kaleidoscope-Simulator-Recorder requires the Arduino library [Aglais](https://github.com/CapeLeidokos/Aglais.git)
+to be installed.
+
 ### Preparing the sketch
 
 Include the header `Kaleidoscope-Simulator-Recorder.h` in your sketch and add the plugin to the list of plugins.
