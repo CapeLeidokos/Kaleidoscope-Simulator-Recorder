@@ -1,16 +1,43 @@
 # Kaleidoscope-Simulator-Recorder
 
-[Kaleidoscope-Simulator-Recorder](https://github.com/CapeLeidokos/Kaleidoscope-Simulator-Recorder.git) is an auxiliary plugin that can be used to generate I/O protocols 
-of the keyboard. See the description of the library [Aglais](https://github.com/CapeLeidokos/Aglais.git)
-that this plugin depends on for more information about the generated
-data format.
+A plugin that records typing sessions.
 
-## Collecting I/O protocols
+## Purpose
 
-If the plugin is active in the firmware, the keyboard signals its readyness
-for recording by blinking three times red and then one time green.
-This gives you enough time to pipe the data that is received on the host
-system to a file. This data is arriving through the serial interface.
+When operating a Kaleidoscope driven keyboard, key actions (keys being pressed and released) cause
+the firmware to emit different type of USB HID reports that are send to the host system. Those reports inform the host system
+about input through the USB devices (keyboard, boot-keyboard, mouse and absolute mouse) as which the keyboard registeres with the host system.
+
+For simulation based integration testing, e.g. with [Kaleidoscope-Simulator](https://github.com/CapeLeidokos/Kaleidoscope-Simulator.git],
+the exact timing of key actions and generated HID reports is of great importance. The simulator is expected to produce the same series of HID reports as the physical keyboard when confronted with key action. The I/O data of a keyboard session can thus be used to define tests that are executed by the simulator. Failing tests indicates that the I/O behavior of the firmware has changed compared to the firmware that was used to record the test data.
+
+Kaleidoscope-Simulator-Recorder collects timing information and sends them via the serial interface to the host system in [Aglais](https://github.com/CapeLeidokos/Aglais.git) data format.
+
+## Application
+
+### Preparing the sketch
+
+Include the header `Kaleidoscope-Simulator-Recorder.h` in your sketch and add the plugin to the list of plugins.
+Please make sure that Kaleidoscope-Simulator-Recorder is the first in the list.
+
+```cpp
+...
+#include "Kaleidoscope-Simulator-Recorder.h"
+...
+
+KALEIDOSCOPE_INIT_PLUGINS(
+   SimulatorRecorder,
+   ...
+)
+```
+
+### Operating the keyboard
+
+Once Kaleidoscope-Simulator-Recorder is part of the running firmware, the device's LEDs will flash three times red and one time green every time it is plugged into the host. This is to inform the user about recording and data transfer to start soon. Data transfer starts right after the intro sequence. The sequence provides enough time to redirect serial output to a file before the recording starts.
+
+### Collecting data
+
+The stream of data send from the keyboard is best redirected to a file, e.g. on a GNU/Linux system typically as
 
 ```
 cat /dev/ttyACM0 > io_protocol.agl

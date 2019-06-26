@@ -18,11 +18,12 @@
 
 #include "Kaleidoscope-Simulator-Recorder.h"
 
+#include "Kaleidoscope.h"
 #include "Kaleidoscope-LEDControl.h"
 #include "Kaleidoscope-FocusSerial.h"
 #include "HID.h"
-#include "aglais/src/Aglais.h"
-#include "aglais/src/v1/Grammar.h"
+#include "Aglais.h"
+#include "aglais/v1/Grammar.h"
 
 #define FSH (const __FlashStringHelper*)  //A helper to allow printing the PROGMEM strings.
 
@@ -42,11 +43,12 @@ struct CallId {
    static constexpr uint8_t second = 1;
 };
    
-void SimulatorRecorder::setLEDsWait(uint8_t red, uint8_t green, uint8_t blue) {
+void SimulatorRecorder::setLEDs(uint8_t red, uint8_t green, uint8_t blue) {
    LEDControl::set_all_leds_to(red, green, blue);
    LEDControl::syncLeds();
-   delay(500);
 }
+
+HIDReportObserver::SendReportHook SimulatorRecorder::previous_hook_ = nullptr;
 
 void SimulatorRecorder::sendReportHook(uint8_t id, const void* data, 
                                        int len, int result)
@@ -58,6 +60,10 @@ void SimulatorRecorder::sendReportHook(uint8_t id, const void* data,
       Focus.send(byte_data[i]);
    }
    Focus.sendRaw('\n');
+   
+   if(previous_hook_) {
+      (*previous_hook_)(id, data, len, result);
+   }
 }
 
 void SimulatorRecorder::sendProtocolHeader() const
@@ -72,20 +78,57 @@ void SimulatorRecorder::sendProtocolHeader() const
    Focus.sendRaw("\"\n");
 }
 
+bool SimulatorRecorder::stageFinished(uint16_t duration) const {
+   return Kaleidoscope.hasTimeExpired(t_start_stage_, duration);
+}
+
+void SimulatorRecorder::nextStage() {
+   t_start_stage_ = Kaleidoscope.millisAtCycleStart();
+   ++intro_stage_;
+}
+
 void SimulatorRecorder::displayIntro()
 {
-   // Have an intro-sequence that prepares for recording
-   //
-   delay(500);
-   setLEDsWait(255, 0, 0);
-   setLEDsWait(0, 0, 0);
-   setLEDsWait(255, 0, 0);
-   setLEDsWait(0, 0, 0);
-   setLEDsWait(255, 0, 0);
-   setLEDsWait(0, 0, 0);
-   setLEDsWait(0, 255, 0);
-   setLEDsWait(0, 255, 0);
-   setLEDsWait(0, 0, 0);
+   switch(intro_stage_) {
+      case 0:
+         this->nextStage();
+         break;
+      case 1:
+         this->stage(0, 0, 0);
+         break;
+      case 2:
+         this->stage(255, 0, 0);
+         break;
+      case 3:
+         this->stage(0, 0, 0);
+         break;
+      case 4:
+         this->stage(255, 0, 0);
+         break;
+      case 5:
+         this->stage(0, 0, 0);
+         break;
+      case 6:
+         this->stage(255, 0, 0);
+         break;
+      case 7:
+         this->stage(0, 0, 0);
+         break;
+      case 8:
+         this->stage(0, 255, 0);
+         break;
+      case 9:
+         this->stage(0, 255, 0);
+         break;
+      case 10:
+         this->stage(0, 0, 0);
+         break;
+      case 11:
+         previous_hook_ = HIDReportObserver::resetHook(&SimulatorRecorder::sendReportHook);
+         this->sendProtocolHeader();
+         recording_enabled_ = true; 
+         break;
+   }
 }
 
 EventHandlerResult SimulatorRecorder::onKeyswitchEvent(Key &mapped_key, byte row, byte col, uint8_t key_state)
@@ -113,14 +156,9 @@ EventHandlerResult SimulatorRecorder::beforeEachCycle()
 {
    auto cur_time = Kaleidoscope.millisAtCycleStart();
       
-   if(first_use_) {
-      
-      // Catch any HID reports send to the host
-      //
-      HID().setSendReportHook(&SimulatorRecorder::sendReportHook);
+   if(!recording_enabled_) {
       this->displayIntro();
-      this->sendProtocolHeader();
-      first_use_ = false;
+      return EventHandlerResult::OK;
    }
    else {
       Focus.send(Command::end_cycle, cycle_id_, cur_time);

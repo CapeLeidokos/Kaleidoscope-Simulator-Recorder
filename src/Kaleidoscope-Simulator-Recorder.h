@@ -18,7 +18,8 @@
 
 #pragma once
 
-#include <Kaleidoscope.h>
+#include "Kaleidoscope.h"
+#include "HIDReportObserver.h"
 
 namespace kaleidoscope {
 namespace plugin {
@@ -33,15 +34,29 @@ class SimulatorRecorder : public Plugin {
       
    private:
       
-      static void setLEDsWait(uint8_t red, uint8_t green, uint8_t blue);
+      bool stageFinished(uint16_t duration) const;
+      void nextStage();
+      
+      void stage(uint8_t red, uint8_t green, uint8_t blue) {
+         if(stageFinished(stage_duration_)) {
+            this->setLEDs(red, green, blue);
+            this->nextStage();
+         }
+      }
+      
+      static void setLEDs(uint8_t red, uint8_t green, uint8_t blue);
       void sendProtocolHeader() const;
-      static void displayIntro();
+      void displayIntro();
       
       static void sendReportHook(uint8_t id, const void* data, int len, int result);
-      
-      bool first_use_ = true;
+
+      static constexpr uint16_t stage_duration_ = 500;
+      uint8_t intro_stage_ = 0;
+      uint16_t t_start_stage_ = 0;
+      bool recording_enabled_ = false;
       uint32_t cycle_id_ = 0;
       const char *id_string_ = nullptr;
+      static HIDReportObserver::SendReportHook previous_hook_;
 };
    
 } // namespace plugin
