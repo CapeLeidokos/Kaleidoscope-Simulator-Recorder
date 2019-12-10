@@ -36,6 +36,8 @@ KALEIDOSCOPE_INIT_PLUGINS(
 )
 ```
 
+**Important:** The simulator recorder plugin interferes with the Focus plugin. Make sure to disable Focus when recording.
+
 ### Operating the keyboard
 
 Once Kaleidoscope-Simulator-Recorder is part of the running firmware, the device's LEDs will flash three times red and one time green every time it is plugged into the host. This is to inform the user about recording and data transfer to start soon. Data transfer starts right after the intro sequence. The sequence provides enough time to redirect serial output to a file before the recording starts.
@@ -53,5 +55,5 @@ and then directly added as quoted C++-string to a test that
 can be used with [Kaleidoscope-Simulator](https://github.com/CapeLeidokos/Kaleidoscope-Simulator.git).
 
 ```
-aglais_convert io_protocol.agl io_protocol.compressed.agl
+aglais_convert -v io_protocol.agl io_protocol.verbose.agl
 ```
