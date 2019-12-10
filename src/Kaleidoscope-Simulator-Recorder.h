@@ -27,7 +27,7 @@ namespace plugin {
 class SimulatorRecorder : public Plugin {
    public:
 
-      EventHandlerResult onKeyswitchEvent(Key &mapped_key, byte row, byte col, uint8_t key_state);
+      EventHandlerResult onKeyswitchEvent(Key &mapped_key, KeyAddr key_addr, uint8_t key_state);
       EventHandlerResult beforeEachCycle();
       
       void setFirmwareId(const char *id_string) { id_string_ = id_string; }

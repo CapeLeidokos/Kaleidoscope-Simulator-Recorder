@@ -32,17 +32,6 @@ using namespace aglais::v1;
 namespace kaleidoscope {
 namespace plugin {
    
-struct HandlerFlags {
-   static constexpr uint8_t on_setup           = 1;
-   static constexpr uint8_t on_keyswitch_event = 2;
-   static constexpr uint8_t before_each_cycle  = 3;
-};
-
-struct CallId {
-   static constexpr uint8_t first  = 0;
-   static constexpr uint8_t second = 1;
-};
-   
 void SimulatorRecorder::setLEDs(uint8_t red, uint8_t green, uint8_t blue) {
    LEDControl::set_all_leds_to(red, green, blue);
    LEDControl::syncLeds();
@@ -127,25 +116,34 @@ void SimulatorRecorder::displayIntro()
          previous_hook_ = HIDReportObserver::resetHook(&SimulatorRecorder::sendReportHook);
          this->sendProtocolHeader();
          recording_enabled_ = true; 
+         
+         // Start cycle command of the first step
+         //
+         auto cur_time = Kaleidoscope.millisAtCycleStart();
+         Focus.send(Command::start_cycle, cycle_id_, cur_time);
+         Focus.sendRaw("\n");
          break;
    }
 }
 
-EventHandlerResult SimulatorRecorder::onKeyswitchEvent(Key &mapped_key, byte row, byte col, uint8_t key_state)
+EventHandlerResult SimulatorRecorder::onKeyswitchEvent(Key &mapped_key, KeyAddr key_addr, uint8_t key_state)
 {   
-   if(   (row >= KeyboardHardware.matrix_rows)
-      || (col >= KeyboardHardware.matrix_columns)) {
+   if(!key_addr.isValid()) {
+      return EventHandlerResult::OK;
+   }
+   
+   if(!recording_enabled_) {
       return EventHandlerResult::OK;
    }
    
    if(keyToggledOn(key_state)) {
       Focus.send(Command::action, SubCommand::key_pressed);
-      Focus.send(row, col);
+      Focus.send(key_addr.row(), key_addr.col());
       Focus.sendRaw('\n');
    }
    if(keyToggledOff(key_state)) {
       Focus.send(Command::action, SubCommand::key_released);
-      Focus.send(row, col);
+      Focus.send(key_addr.row(), key_addr.col());
       Focus.sendRaw('\n');
    }
    
